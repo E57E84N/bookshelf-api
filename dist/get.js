@@ -39,9 +39,14 @@ module.exports = function (req, res, urlPieces, model, config) {
 					promise = promise.query('orderBy', req.query.sort, direction);
 				}
 
-				// Limit support
-
-				// Offset support
+				
+				if (req.query._perPage && req.query._page) {
+				  var offset=(req.query._page -1)*req.query._perPage;
+				  var limit= offset + req.query._perPage;
+				  promise = promise.query(function(qb){
+				    qb.offset(offset).limit(limit);
+				  });
+				}
 			}
 
 			promise = promise.fetchAll(fetchParams);
@@ -54,7 +59,11 @@ module.exports = function (req, res, urlPieces, model, config) {
 			});
 			res.status(config.errors.RECORD_NOT_FOUND.status).json(list.toJSON());
 		} else {
-			res.json(results.toJSON());
+			model.query().count('id')
+				.then(function (countRes) {
+				  res.set('X-Total-Count', countRes[0]['count(`id`)']);
+				  res.json(results.toJSON());
+				});
 		}
 	}).catch(function (err) {
 		list.add('RECORD_NOT_FOUND', {
