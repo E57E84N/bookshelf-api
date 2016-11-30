@@ -24,7 +24,13 @@ module.exports = function (req, res, urlPieces, model, config) {
 			promise = promise.where(config.deletedAttribute, null);
 		}
 		return promise.save(req.body, options).then(function (savedModel) {
-			res.json(savedModel.toJSON());
+			var savedModelJSON = savedModel.toJSON();
+			if (req.nonUpdateFields){
+				for (var i=0; i<req.nonUpdateFields.length; i++){
+					savedModelJSON[req.nonUpdateFields[i]] = "";
+				}
+			}
+      			res.json(savedModelJSON);
 		}).catch(function (err) {
 			var status = 500;
 			if (err.message === 'No Rows Updated') {
